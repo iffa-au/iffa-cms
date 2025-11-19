@@ -13,9 +13,6 @@ const envSchema = z.object({
     REDIS_SESSION_SECRET:z.string(),
     DB_URL: z.url(),
     BCRYPT_SALT_ROUNDS:z.string(),
-    GOOGLE_CLIENT_ID: z.string(),
-    GOOGLE_CLIENT_SECRET: z.string(),
-    GOOGLE_REDIRECT_URI: z.string()
 })
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -31,7 +28,6 @@ export const {
     PORT, NODE_ENV, CLIENT_URL,
     REDIS_SESSION_NAME, REDIS_SESSION_SECRET,
     DB_URL,
-    BCRYPT_SALT_ROUNDS,
-    GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+    BCRYPT_SALT_ROUNDS
 } = env
 
