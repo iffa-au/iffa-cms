@@ -3,7 +3,6 @@ import {Router} from "express";
 import {signUp, signIn, signOut} from "../controllers/auth.controller";
 import {validate} from "../middlewares/validate.middleware";
 import {loginValidator, registerValidator} from "../validators/auth.validator";
-import passport from "passport";
 
 const authRouter = Router();
 

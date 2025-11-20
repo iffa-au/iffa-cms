@@ -1,7 +1,29 @@
 import {RequestHandler} from "express";
-import {generateHashedPassword, validatePassword} from "../utils/password";
-import {BadRequestError, successResponse, UnauthorizedError} from "../utils/http";
+import {generateHashedPassword} from "../utils/password";
+import {successResponse} from "../utils/http";
 import {loginCredentialsUser, registerCredentialsUser} from "../services/auth.service";
+import jwt, {Secret, SignOptions} from "jsonwebtoken";
+import {JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV} from "../config/env";
+
+
+const generateToken = (user: any) => {
+    return jwt.sign(
+        {
+            id: user.id,
+            email: user.email,
+            role: user.role
+        },
+        JWT_SECRET as Secret,
+        {expiresIn: JWT_EXPIRES_IN} as SignOptions
+    );
+};
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: NODE_ENV === 'production',
+    sameSite: NODE_ENV=== 'production' ? 'none' as const : 'lax' as const,
+    maxAge: 1000 * 60 * 60 * 1
+}
 
 export const signUp: RequestHandler = async(req, res, next)=>{
     try{
@@ -9,17 +31,19 @@ export const signUp: RequestHandler = async(req, res, next)=>{
         const hashedPassword = await generateHashedPassword(password);
         const user = await registerCredentialsUser(name, email, hashedPassword);
 
-        req.session.user = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role as string,
-        }
+        const token = generateToken(user);
+
+        res.cookie("token", token, cookieOptions)
 
         successResponse(res,{
             success: true,
             message: "User registered registered",
-            data: req.session.user
+            data: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
         })
 
     }catch (error){
@@ -30,23 +54,23 @@ export const signUp: RequestHandler = async(req, res, next)=>{
 export const signIn: RequestHandler = async(req, res, next)=>{
     try {
 
-        if(req.session.user) throw new BadRequestError("User already signed in");
 
         const {email, password} = req.body;
 
         const user = await loginCredentialsUser(email, password);
 
-        req.session.user = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role as string,
-        };
+        const token = generateToken(user);
+        res.cookie("token", token, cookieOptions)
 
         successResponse(res, {
             success: true,
             message: "User signed in successfully",
-            data: req.session.user
+            data: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
         })
     }
     catch (error) {
@@ -56,15 +80,13 @@ export const signIn: RequestHandler = async(req, res, next)=>{
 
 export const signOut: RequestHandler = async(req, res, next) => {
     try{
-        req.session.destroy((err) => {
-            if (err) {
-                return next(err);
-            }
-            res.json({
-                success: true,
-                message: "User signed out successfully"
-            })
-        })
+        res.clearCookie("token", cookieOptions);
+
+        successResponse(res, {
+            success: true,
+            message: "User signed out successfully",
+            data: {}
+        });
     }catch (error){
         next(error);
     }

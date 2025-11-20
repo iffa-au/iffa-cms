@@ -9,8 +9,8 @@ const envSchema = z.object({
     PORT: z.string().default("8080"),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     CLIENT_URL:z.string(),
-    REDIS_SESSION_NAME:z.string(),
-    REDIS_SESSION_SECRET:z.string(),
+    JWT_SECRET:z.string(),
+    JWT_EXPIRES_IN:z.string(),
     DB_URL: z.url(),
     BCRYPT_SALT_ROUNDS:z.string(),
 })
@@ -26,7 +26,7 @@ const env = parsedEnv.data;
 
 export const {
     PORT, NODE_ENV, CLIENT_URL,
-    REDIS_SESSION_NAME, REDIS_SESSION_SECRET,
+    JWT_SECRET, JWT_EXPIRES_IN,
     DB_URL,
     BCRYPT_SALT_ROUNDS
 } = env
