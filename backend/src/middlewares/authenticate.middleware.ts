@@ -1,26 +1,35 @@
-import {RequestHandler} from "express";
-import {UnauthorizedError} from "../utils/http";
-import {validateToken} from "../controllers/auth.controller";
+import { RequestHandler } from "express";
+import { UnauthorizedError } from "../utils/http";
+import { validateJWToken } from "../config/jwt";
 
-const authenticate: RequestHandler = (req, res, next) => {
-    try{
-        let token = req.cookies?.token;
-        let claim = validateToken(token);
-        (req as any).user = claim;
-        if(claim) return next();
+const authenticate: RequestHandler = async (req, res, next) => {
+    try {
+        // 1. Try cookie first
+        const cookieToken = req.cookies?.token;
+        if (cookieToken) {
+            const claims = await validateJWToken(cookieToken);
+            (req as any).user = claims;
+            return next();
+        }
 
-        let header = req.headers.authorization;
-        if(!header) throw new UnauthorizedError("No Header");
-        token = header.split(" ")[1];
-        if(!token) throw new UnauthorizedError("No token");
-        claim = validateToken(token);
-        if(!claim) throw new UnauthorizedError("Invalid token");
-        (req as any).user = claim;
-        if(claim) return next();
+        // 2. Try Authorization header next
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            throw new UnauthorizedError("No token provided");
+        }
 
-    }catch (error){
-        next(error);
+        const token = authHeader.split(" ")[1];
+        if (!token) {
+            throw new UnauthorizedError("Invalid Authorization header format");
+        }
+
+        const claims = await validateJWToken(token);
+        (req as any).user = claims;
+
+        return next();
+    } catch (error) {
+        return next(error);
     }
-}
+};
 
 export default authenticate;

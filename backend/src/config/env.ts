@@ -8,8 +8,10 @@ config({
 const envSchema = z.object({
     PORT: z.string().default("8080"),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+    HOST_URL:z.string(),
     CLIENT_URL:z.string(),
     JWT_SECRET:z.string(),
+    JWT_ALGORITHM:z.string(),
     JWT_EXPIRES_IN:z.string(),
     DB_URL: z.url(),
     BCRYPT_SALT_ROUNDS:z.string(),
@@ -25,8 +27,9 @@ if (!parsedEnv.success) {
 const env = parsedEnv.data;
 
 export const {
-    PORT, NODE_ENV, CLIENT_URL,
-    JWT_SECRET, JWT_EXPIRES_IN,
+    PORT, NODE_ENV,
+    HOST_URL, CLIENT_URL,
+    JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRES_IN,
     DB_URL,
     BCRYPT_SALT_ROUNDS
 } = env

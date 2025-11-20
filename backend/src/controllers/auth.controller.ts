@@ -2,25 +2,11 @@ import {RequestHandler} from "express";
 import {generateHashedPassword} from "../utils/password";
 import {successResponse} from "../utils/http";
 import {loginCredentialsUser, registerCredentialsUser} from "../services/auth.service";
-import jwt, {Jwt, Secret, SignOptions} from "jsonwebtoken";
 import {JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV} from "../config/env";
+import {SignJWT} from "jose";
+import {generateJWToken} from "../config/jwt";
 
 
-const generateToken = (user: any) => {
-    return jwt.sign(
-        {
-            id: user.id,
-            email: user.email,
-            role: user.role
-        },
-        JWT_SECRET,
-        {expiresIn: JWT_EXPIRES_IN} as SignOptions
-    );
-};
-
-export const validateToken = (token: string) => {
-    return jwt.verify(token, JWT_SECRET);
-}
 
 const cookieOptions = {
     httpOnly: true,
@@ -35,7 +21,7 @@ export const signUp: RequestHandler = async(req, res, next)=>{
         const hashedPassword = await generateHashedPassword(password);
         const user = await registerCredentialsUser(name, email, hashedPassword);
 
-        const token = generateToken(user);
+        const token = await generateJWToken(user);
 
         res.cookie("token", token, cookieOptions)
 
@@ -63,7 +49,7 @@ export const signIn: RequestHandler = async(req, res, next)=>{
 
         const user = await loginCredentialsUser(email, password);
 
-        const token = generateToken(user);
+        const token = await generateJWToken(user);
         res.cookie("token", token, cookieOptions)
 
         successResponse(res, {
