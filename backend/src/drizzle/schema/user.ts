@@ -1,20 +1,16 @@
 import {
     pgTable, serial,
     varchar, boolean,
-    integer, pgEnum, uuid
+    pgEnum
 } from "drizzle-orm/pg-core"
 import {timestamps} from "./helpers";
+import {roles} from "../../constants";
 
-export enum Roles{
-    ADMIN = "4736",
-    STAFF = "4689",
-    USER = "4031"
-}
 
-export const userRoles = pgEnum("roles", Roles);
+export const userRoles = pgEnum("roles", roles);
 
 export const userTable = pgTable("users", {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: serial("id").primaryKey(),
 
     email: varchar("email", { length: 100 }).notNull().unique(),
     password: varchar("password"),
@@ -24,7 +20,7 @@ export const userTable = pgTable("users", {
 
     isEmailVerified: boolean("is_email_verified").default(false),
 
-    role: userRoles().default(Roles.USER),
+    role: userRoles().default(roles.USER),
 
     name: varchar("name", { length:50 }).notNull(),
     avatarUrl: varchar("avatarUrl", { length:255 }),

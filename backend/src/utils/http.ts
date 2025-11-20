@@ -39,8 +39,17 @@ export class ValidationError extends HttpError {
  * 401 Unauthorized Error
  */
 export class UnauthorizedError extends HttpError {
-    constructor(message: string) {
+    constructor(message: string = "Unauthorized") {
         super(message, 401);
+    }
+}
+
+/**
+ * 401 Unauthorized Error
+ */
+export class ForbiddenError extends HttpError {
+    constructor(message: string = "Forbidden") {
+        super(message, 404);
     }
 }
 
@@ -48,7 +57,7 @@ export class UnauthorizedError extends HttpError {
  * 404 Not Found Error
  */
 export class NotFoundError extends HttpError {
-    constructor(message: string) {
+    constructor(message: string = "Resource not found") {
         super(message, 404);
     }
 }

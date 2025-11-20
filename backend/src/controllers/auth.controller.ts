@@ -2,7 +2,7 @@ import {RequestHandler} from "express";
 import {generateHashedPassword} from "../utils/password";
 import {successResponse} from "../utils/http";
 import {loginCredentialsUser, registerCredentialsUser} from "../services/auth.service";
-import jwt, {Secret, SignOptions} from "jsonwebtoken";
+import jwt, {Jwt, Secret, SignOptions} from "jsonwebtoken";
 import {JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV} from "../config/env";
 
 
@@ -13,10 +13,14 @@ const generateToken = (user: any) => {
             email: user.email,
             role: user.role
         },
-        JWT_SECRET as Secret,
+        JWT_SECRET,
         {expiresIn: JWT_EXPIRES_IN} as SignOptions
     );
 };
+
+export const validateToken = (token: string) => {
+    return jwt.verify(token, JWT_SECRET);
+}
 
 const cookieOptions = {
     httpOnly: true,
