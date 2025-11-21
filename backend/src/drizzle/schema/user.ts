@@ -22,10 +22,10 @@ export const userTable = pgTable("users", {
 
     role: userRoles().default(roles.USER),
 
+    refreshToken: varchar("refresh_token", { length: 500 }),
+
     name: varchar("name", { length:50 }).notNull(),
-    avatarUrl: varchar("avatarUrl", { length:255 }),
-    bio: varchar("bio", { length:500 }),
-    phoneNumber: varchar("phone_number", { length:20 }),
+
 
     ...timestamps
 });

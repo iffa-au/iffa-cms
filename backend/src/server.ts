@@ -7,7 +7,8 @@ import authRouter from "./routes/auth.route";
 import userRouter from "./routes/user.route";
 import {NotFoundError} from "./utils/http";
 
-import authenticate from "./middlewares/authenticate.middleware";
+
+import verifyJWT from "./middlewares/jwt.middleware";
 
 const app = express();
 
@@ -23,7 +24,7 @@ app.use(cookieParser())
 
 // Route handlers - define your API endpoints
 app.use("/api/v1/auth", authRouter)
-app.use("/api/v1/users", authenticate, userRouter)
+app.use("/api/v1/users", verifyJWT, userRouter)
 
 app.get("/", (req, res)=>{
     res.send("Welcome to IFFA CMS!");

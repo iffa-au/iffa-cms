@@ -10,9 +10,11 @@ const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     HOST_URL:z.string(),
     CLIENT_URL:z.string(),
-    JWT_SECRET:z.string(),
+    JWT_ACCESS_TOKEN_SECRET:z.string(),
+    JWT_REFRESH_TOKEN_SECRET:z.string(),
     JWT_ALGORITHM:z.string(),
-    JWT_EXPIRES_IN:z.string(),
+    JWT_ACCESS_EXPIRES_IN:z.string(),
+    JWT_REFRESH_EXPIRES_IN:z.string(),
     DB_URL: z.url(),
     BCRYPT_SALT_ROUNDS:z.string(),
 })
@@ -29,7 +31,8 @@ const env = parsedEnv.data;
 export const {
     PORT, NODE_ENV,
     HOST_URL, CLIENT_URL,
-    JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRES_IN,
+    JWT_ACCESS_TOKEN_SECRET, JWT_REFRESH_TOKEN_SECRET,
+    JWT_ALGORITHM, JWT_ACCESS_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN,
     DB_URL,
     BCRYPT_SALT_ROUNDS
 } = env

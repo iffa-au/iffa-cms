@@ -1,10 +1,12 @@
 import {RequestHandler} from "express";
 import {generateHashedPassword} from "../utils/password";
-import {successResponse} from "../utils/http";
+import {ForbiddenError, successResponse, UnauthorizedError} from "../utils/http";
 import {loginCredentialsUser, registerCredentialsUser} from "../services/auth.service";
-import {JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV} from "../config/env";
-import {SignJWT} from "jose";
-import {generateJWToken} from "../config/jwt";
+import {NODE_ENV} from "../config/env";
+import {generateAccessToken, generateRefreshToken, validateRefreshToken} from "../config/jwt";
+import db from "../drizzle/db";
+import {userTable} from "../drizzle/schema/user";
+import {eq} from "drizzle-orm";
 
 
 
@@ -21,18 +23,20 @@ export const signUp: RequestHandler = async(req, res, next)=>{
         const hashedPassword = await generateHashedPassword(password);
         const user = await registerCredentialsUser(name, email, hashedPassword);
 
-        const token = await generateJWToken(user);
-
-        res.cookie("token", token, cookieOptions)
+        const accessToken = await generateAccessToken({id: user.id, role: user.role as string});
+        const refreshToken = await generateRefreshToken({id: user.id});
+        await db.transaction(async(tx)=>{
+            await tx.update(userTable).set({
+                refreshToken
+            }).where(eq(userTable.id, user.id));
+        })
+        res.cookie("jwt", refreshToken, cookieOptions);
 
         successResponse(res,{
             success: true,
-            message: "User registered registered",
+            message: "Doctor registered registered",
             data: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role
+                accessToken
             }
         })
 
@@ -49,17 +53,20 @@ export const signIn: RequestHandler = async(req, res, next)=>{
 
         const user = await loginCredentialsUser(email, password);
 
-        const token = await generateJWToken(user);
-        res.cookie("token", token, cookieOptions)
+        const accessToken = await generateAccessToken({id: user.id, role: user.role as string});
+        const refreshToken = await generateRefreshToken({id: user.id});
+        await db.transaction(async(tx)=>{
+            await tx.update(userTable).set({
+                refreshToken
+            }).where(eq(userTable.id, user.id));
+        })
+        res.cookie("jwt", refreshToken, cookieOptions);
 
-        successResponse(res, {
+        successResponse(res,{
             success: true,
-            message: "User signed in successfully",
+            message: "Doctor registered registered",
             data: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role
+                accessToken
             }
         })
     }
@@ -68,17 +75,68 @@ export const signIn: RequestHandler = async(req, res, next)=>{
     }
 }
 
-export const signOut: RequestHandler = async(req, res, next) => {
-    try{
-        res.clearCookie("token", cookieOptions);
+export const signOut: RequestHandler = async (req, res, next) => {
+    try {
+        const refreshToken = req.cookies?.jwt;
 
+        // Always clear cookie
+        res.clearCookie("jwt", cookieOptions);
+
+        // No JWT in cookie → still return success
+        if (!refreshToken) {
+            return successResponse(res, {
+                success: true,
+                message: "User signed out successfully"
+            });
+        }
+
+        // Check if refresh token exists in DB
+        const [foundUser] = await db.select()
+            .from(userTable)
+            .where(eq(userTable.refreshToken, refreshToken));
+
+        if (!foundUser) {
+            // Do NOT throw errors — still return OK
+            return successResponse(res, {
+                success: true,
+                message: "User signed out successfully"
+            });
+        }
+
+        // Remove refresh token from DB
+        await db.transaction(async (tx) => {
+            await tx.update(userTable)
+                .set({ refreshToken: "" })
+                .where(eq(userTable.id, foundUser.id));
+        });
+
+        return successResponse(res, {
+            success: true,
+            message: "User signed out successfully"
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+export const refreshAccessToken: RequestHandler = async (req, res, next) => {
+    try {
+        const cookie = req.cookies;
+        if (!cookie?.jwt) throw new UnauthorizedError("Refresh token not found");
+        const refreshToken = cookie.jwt;
+        const [foundUser] = await db.select().from(userTable).where(eq(userTable.refreshToken, refreshToken));
+        if (!foundUser) throw new ForbiddenError();
+        const validRefreshToken = await validateRefreshToken(refreshToken);
+        if (!validRefreshToken || Number(validRefreshToken.sub)!==foundUser.id) throw new ForbiddenError();
+        const accessToken = await generateAccessToken({id: foundUser.id, role: foundUser.role as string});
         successResponse(res, {
             success: true,
-            message: "User signed out successfully",
-            data: {}
+            message: "Access token refreshed successfully",
+            data: { accessToken }
         });
-    }catch (error){
+    }catch (error) {
         next(error);
     }
 }
-
